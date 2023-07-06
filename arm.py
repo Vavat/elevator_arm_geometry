@@ -1,22 +1,7 @@
 import math
 
-"""
-SCARA-like kinematic conversion of geometry for Marlin.
-
-Raises:
-    Exception: _description_
-    Exception: _description_
-    Exception: _description_
-    Exception: _description_
-
-Returns:
-    _type_: _description_
-"""
-
 class Arm():
     
-    """Initialise the class with limb lengths and position of static pivot within the coordinate system.
-    """
     def __init__(self, shoulder, elbow, origin_x = 0, origin_y = 0):
         if shoulder > 0:
             self.__shoulder_length = shoulder
@@ -37,7 +22,7 @@ class Arm():
         self.__wrist_angle = 0
     
     def __str__(self):
-        return f'x:{self.__current_position[0]}, y:{self.__current_position[1]}'
+        return f'x:{self.__position_x}, y:{self.__position_y}'
 
     #TODO: find a way to handle situation where arm needs to be completely straight...
     def forwardKinematics(self, x, y, wrist = 0, rate = 0) -> tuple(float, float, float, float):
@@ -56,29 +41,29 @@ class Arm():
             self.__shoulder_angle = math.atan(y/x) - angle
             # Calculate wrist angle
             self.__wrist_angle = wrist - self.__shoulder_angle - self.__elbow_angle
-        return (self.__shoulder_angle, self.__elbow_angle, 0)
+            if rate != 0:
+                travel_distance = (self.__position_x - x)^2 + (self.__position_y - y)^2 + (self.__angle - wrist)^2
+                travel_distance = math.sqrt(travel_distance)
+                
+        return (self.__shoulder_angle, self.__elbow_angle, self.__wrist_angle)
     
     def isPositionOK(self, x, y) -> bool:
         reach = self.__shoulder_length + self.__elbow_length
         position = math.sqrt(x^2 + y^2)
         return (reach >= position)
     
-    def getPosition(self) -> tuple[float, float]:
-        return (self.__
+    def getPosition(self) -> tuple[float, float, float]:
+        return (self.__position_x, self.__position_y, self.__angle)
     
     def setPosition(self, x, y, angle) -> bool:
         b_success = False
         if self.isPositionOK(x, y):
             try: 
-                self.forwardKinematics(x, y, angle):
+                self.forwardKinematics(x, y, angle)
             except Exception as e:
                 raise e 
-            finally:
-                self.__position_x = x
-                self.__position_y = y
-                self.__angle = angle
+            else:
                 b_success = True
         else:
             raise Exception('Position is not reachable.')
         return b_success
-
